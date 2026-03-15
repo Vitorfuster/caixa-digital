@@ -35,7 +35,7 @@ export const Sheets = styled.div`
   flex-direction: row;
   gap: 30px;
   width: 100%;
-  
+
   @media (max-width: 1400px) {
     flex-direction: column;
   }
@@ -93,7 +93,7 @@ export const TBody = styled.tbody``;
 
 export const Tr = styled.tr`
   border-bottom: 1px solid #eaedf1;
-  
+
   &:nth-child(even) {
     background-color: #fcfcfd;
   }
@@ -115,7 +115,7 @@ export const Td = styled.td`
   color: #495057;
   height: 44px;
   border-right: 1px solid #f1f4f8;
-  
+
   &:last-child {
     border-right: none;
   }
@@ -132,9 +132,201 @@ export const CellInput = styled.input`
   font-size: 14px;
   color: #333;
   font-family: inherit;
-  
+
   &:focus {
     background-color: rgba(255, 255, 255, 0.9);
-    box-shadow: inset 0 0 0 2px ${(props) => props.focusColor || '#000'};
+    box-shadow: inset 0 0 0 2px ${(props) => props.focusColor || "#000"};
+  }
+`;
+
+export const ActionContainer = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  gap: 20px;
+  margin-bottom: 20px;
+`;
+
+export const ActionButton = styled.button`
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
+export const AddMovementBtn = styled(ActionButton)`
+  background-color: #27ae60;
+`;
+
+export const RegisterExpenseBtn = styled(ActionButton)`
+  background-color: #e74c3c;
+`;
+
+export const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+export const ModalContent = styled.div`
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+`;
+
+export const ModalTitle = styled.h3`
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c3e50;
+`;
+
+export const InputGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+`;
+
+export const Label = styled.label`
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #34495e;
+`;
+
+export const Input = styled.input`
+  padding: 10px;
+  border: 1px solid #bdc3c7;
+  border-radius: 6px;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: #3498db;
+  }
+`;
+
+export const Select = styled.select`
+  padding: 10px;
+  border: 1px solid #bdc3c7;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+
+  &:focus {
+    outline: none;
+    border-color: #3498db;
+  }
+`;
+
+export const ButtonContainer = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+`;
+
+export const SaveBtn = styled.button`
+  flex: 1;
+  padding: 12px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #2980b9;
+  }
+`;
+
+export const CancelBtn = styled.button`
+  flex: 1;
+  padding: 12px;
+  background-color: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #7f8c8d;
+  }
+`;
+
+export const ExpensesList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+`;
+
+export const ExpenseItem = styled.div`
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 5px;
+  border-bottom: 1px solid gray;
+  background-color: #f4f6f9;
+`;
+
+export const ExpenseInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 15px;
+  color: #2c3e50;
+`;
+
+export const ExpenseDesc = styled.span`
+  font-weight: 500;
+
+  span {
+    padding: 4px 4px;
+    border-radius: 5px;
+    font-weight: 650;
+    margin-right: 10px;
+  }
+`;
+
+export const ExpenseValue = styled.span`
+  color: #e74c3c;
+  font-weight: 700;
+`;
+
+export const DeleteButton = styled.button`
+  background: transparent;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 6px;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #fdeaea;
+    transform: scale(1.1);
   }
 `;

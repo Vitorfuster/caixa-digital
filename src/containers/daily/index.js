@@ -23,6 +23,25 @@ import {
   Th,
   Td,
   CellInput,
+  ActionContainer,
+  AddMovementBtn,
+  RegisterExpenseBtn,
+  ModalOverlay,
+  ModalContent,
+  ModalTitle,
+  InputGroup,
+  Label,
+  Input,
+  Select,
+  ButtonContainer,
+  SaveBtn,
+  CancelBtn,
+  ExpensesList,
+  ExpenseItem,
+  ExpenseInfo,
+  ExpenseDesc,
+  ExpenseValue,
+  DeleteButton,
 } from "./style";
 import { formatDate } from "../../utils/FomatData";
 
@@ -70,6 +89,8 @@ export function Daily() {
     }));
   };
 
+  const [itens, setItens] = useState();
+
   // Itens das planilhas
   const [gas, setGas] = useState(buildInitialState());
   const [water, setWater] = useState(buildInitialState());
@@ -77,10 +98,31 @@ export function Daily() {
   const [change, setChange] = useState(0); // Marca se tem alguma mudança feita
   const [timer, setTimer] = useState(0);
 
-  console.log("tempo: ", timer);
+  // Novos estados para o modal e despesas
+  const [expenses, setExpenses] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expenseDescription, setExpenseDescription] = useState("");
+  const [expenseValue, setExpenseValue] = useState("");
+
+  // Novos estados para o modal de movimentações
+  const [isMovModalOpen, setIsMovModalOpen] = useState(false);
+  const [movItem, setMovItem] = useState("");
+  const [movType, setMovType] = useState("in");
+  const [movQuantity, setMovQuantity] = useState("");
+  const [movements, setMovements] = useState([]);
 
   // Busca dados no back_end
   useEffect(() => {
+    const getItens = async () => {
+      try {
+        const { data: item } = await api.get("/item");
+
+        setItens(item);
+      } catch (error) {
+        console.log("Erro ao buscar itens: ", error);
+      }
+    };
+
     const getDaily = async () => {
       // Busca a diária no banco de dados como array
       const { data: daily } = await api.get(`/daily/${criarData(day)}`);
@@ -174,16 +216,40 @@ export function Daily() {
           }
         });
 
-        console.log("DAILY", daily_formated);
-
         setGas(newGas);
         setWater(newWater);
       }
     };
 
+    const getExpenses = async () => {
+      try {
+        const { data: expensesResponse } = await api.get(
+          `expense/${criarData(day)}`,
+        );
+
+        if (expensesResponse.length > 0) {
+          setExpenses(expensesResponse);
+        }
+      } catch (error) {}
+    };
+
+    const getMovement = async () => {
+      try {
+        const { data: movementsResponse } = await api.get(
+          `movement/${criarData(day)}`,
+        );
+
+        if (movementsResponse.length > 0) {
+          setMovements(movementsResponse);
+        }
+      } catch (error) {}
+    };
+
+    getItens();
+    getMovement();
+    getExpenses();
     getDaily();
   }, []);
-
   // Temporizador
   useEffect(() => {
     if (timer > 0) {
@@ -377,7 +443,82 @@ export function Daily() {
 
     return data;
   }
-  console.log(gas);
+
+  const handleDeleteExpense = async (idToRemove) => {
+    try {
+      await api.delete(`/expense/${idToRemove}`);
+      setExpenses(expenses.filter((expense) => expense.id !== idToRemove));
+    } catch (error) {
+      console.log("Erro ao apagar despesa: ", error);
+    }
+  };
+
+  const handleSaveExpense = async () => {
+    if (!expenseDescription || !expenseValue) return;
+
+    const newExpense = {
+      id: `LINE-${expenses.length + 1}-EXPENSE-${day}`,
+      description: expenseDescription,
+      value: parseFloat(expenseValue.replace(",", ".")),
+      date: criarData(day),
+    };
+
+    try {
+      await api.post("/expense", newExpense);
+
+      setExpenses([...expenses, newExpense]);
+
+      setExpenseDescription("");
+      setExpenseValue("");
+      setIsModalOpen(false);
+    } catch (error) {
+      console.log("Erro ao salvar despesas: ", error);
+      setIsModalOpen(false);
+    }
+  };
+
+  const handleDeleteMovement = async (idToRemove) => {
+    try {
+      await api.delete(`/movement/${idToRemove}`);
+    } catch (error) {
+      console.log("Erro ao apagar movimentação: ", error);
+    }
+    setMovements(movements.filter((movement) => movement.id !== idToRemove));
+  };
+
+  const handleSaveMovement = async () => {
+    if (!movItem || !movType || !movQuantity) return;
+
+    const newMovement = {
+      id: `LINE-${movements.length + 1}-MOVEMENT-${day}`,
+      item_id: Number(movItem),
+      type: movType,
+      quantity: Number(movQuantity),
+      date: criarData(day),
+    };
+
+    try {
+      await api.post("/movement", newMovement);
+
+      setMovements([...movements, newMovement]);
+
+      setMovItem("");
+      setMovType("in");
+      setMovQuantity("");
+      setIsMovModalOpen(false);
+    } catch (error) {
+      console.log("Erro ao salvar movimentações: ", error);
+      setIsMovModalOpen(false);
+    }
+  };
+
+  console.log(movements);
+
+  // PRECISO AGORA FAZER O BOTÃO ADICIONAR MOVIMENTAÇÃO FUNCIONAR, AO SER CLICADO ELE DEVE ADICIONAR AS MOVIMENTAÇÕES E BAIXAR DO ESTOQUE, ELE TERA O CAMPO ITEM COMO SELECT PARA SER O ITEM DO ESTOQUE QUE ESTÁ SENDO MOVIMENTADO
+
+  // APOS ISSO, DEVO FORMATAR OS CAMPOS DA PLANILHA, ALGUNS VÃO SER SELECT, OUTROS VÃO ACEITAR SOMENTE UM TIPO DE DADOS
+
+  // APOS ISSO, DEVO CONSTRUIR A PÁGINA DE FECHAMENTO DE CAIXA
 
   return (
     <Container>
@@ -385,6 +526,88 @@ export function Daily() {
         <Title>Ferreira Gás e Água - Controle Diário</Title>
       </Header>
       <Content>
+        <ActionContainer>
+          <AddMovementBtn onClick={() => setIsMovModalOpen(true)}>
+            Adicionar Movimentação
+          </AddMovementBtn>
+          <RegisterExpenseBtn onClick={() => setIsModalOpen(true)}>
+            Registrar Despesas
+          </RegisterExpenseBtn>
+        </ActionContainer>
+
+        {movements.length > 0 && (
+          <ExpensesList>
+            {movements.map((movement) => {
+              const itemInfo = itens?.find((i) => i.id === movement.item_id);
+              const itemName = itemInfo ? itemInfo.name : "Item Desconhecido";
+
+              return (
+                <ExpenseItem key={movement.id}>
+                  <ExpenseInfo>
+                    <ExpenseDesc>
+                      <span
+                        style={{
+                          backgroundColor:
+                            movement.type === "in" ? "#d4edda" : "#f8d7da",
+                          color: movement.type === "in" ? "#155724" : "#721c24",
+                        }}
+                      >
+                        {movement.type === "in" ? "ENTRADA" : "SAÍDA"}
+                      </span>{" "}
+                      {itemName}
+                    </ExpenseDesc>
+                    <ExpenseValue
+                      style={{
+                        color: movement.type === "in" ? "#27ae60" : "#e74c3c",
+                      }}
+                    >
+                      {movement.type === "in" ? "+ " : "- "}
+                      {movement.quantity}
+                    </ExpenseValue>
+                  </ExpenseInfo>
+                  <DeleteButton
+                    onClick={() => handleDeleteMovement(movement.id)}
+                    title="Excluir movimentação"
+                  >
+                    X
+                  </DeleteButton>
+                </ExpenseItem>
+              );
+            })}
+          </ExpensesList>
+        )}
+
+        {expenses.length > 0 && (
+          <ExpensesList>
+            {expenses.map((expense) => (
+              <ExpenseItem key={expense.id}>
+                <ExpenseInfo>
+                  <ExpenseDesc>
+                    <span
+                      style={{
+                        backgroundColor: "#f8d7da",
+                        color: "#721c24",
+                      }}
+                    >
+                      DESPESA
+                    </span>{" "}
+                    {expense.description}
+                  </ExpenseDesc>
+                  <ExpenseValue>
+                    R$ {Number(expense.value).toFixed(2).replace(".", ",")}
+                  </ExpenseValue>
+                </ExpenseInfo>
+                <DeleteButton
+                  onClick={() => handleDeleteExpense(expense.id)}
+                  title="Excluir despesa"
+                >
+                  X
+                </DeleteButton>
+              </ExpenseItem>
+            ))}
+          </ExpensesList>
+        )}
+
         <Sheets>
           <SheetGas>
             <SectionTitle themeColor="#e67e22">Gás</SectionTitle>
@@ -485,6 +708,96 @@ export function Daily() {
       >
         console.log
       </button>
+
+      {isModalOpen && (
+        <ModalOverlay
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsModalOpen(false);
+          }}
+        >
+          <ModalContent>
+            <ModalTitle>Nova Despesa</ModalTitle>
+            <InputGroup>
+              <Label>Descrição</Label>
+              <Input
+                type="text"
+                placeholder="Ex: Pagamento de fornecedor"
+                value={expenseDescription}
+                onChange={(e) => setExpenseDescription(e.target.value)}
+              />
+            </InputGroup>
+            <InputGroup>
+              <Label>Valor</Label>
+              <Input
+                type="number"
+                placeholder="Ex: 50.00"
+                value={expenseValue}
+                onChange={(e) => setExpenseValue(e.target.value)}
+              />
+            </InputGroup>
+            <ButtonContainer>
+              <CancelBtn onClick={() => setIsModalOpen(false)}>
+                Cancelar
+              </CancelBtn>
+              <SaveBtn onClick={handleSaveExpense}>Salvar</SaveBtn>
+            </ButtonContainer>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {isMovModalOpen && (
+        <ModalOverlay
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsMovModalOpen(false);
+          }}
+        >
+          <ModalContent>
+            <ModalTitle>Nova Movimentação</ModalTitle>
+            <InputGroup>
+              <Label>Item</Label>
+              <Select
+                value={movItem}
+                onChange={(e) => setMovItem(e.target.value)}
+              >
+                <option value="" disabled>
+                  Selecione um item
+                </option>
+                {itens &&
+                  itens.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+              </Select>
+            </InputGroup>
+            <InputGroup>
+              <Label>Tipo</Label>
+              <Select
+                value={movType}
+                onChange={(e) => setMovType(e.target.value)}
+              >
+                <option value="in">Entrada</option>
+                <option value="out">Saída</option>
+              </Select>
+            </InputGroup>
+            <InputGroup>
+              <Label>Quantidade</Label>
+              <Input
+                type="number"
+                placeholder="Ex: 10"
+                value={movQuantity}
+                onChange={(e) => setMovQuantity(e.target.value)}
+              />
+            </InputGroup>
+            <ButtonContainer>
+              <CancelBtn onClick={() => setIsMovModalOpen(false)}>
+                Cancelar
+              </CancelBtn>
+              <SaveBtn onClick={handleSaveMovement}>Salvar</SaveBtn>
+            </ButtonContainer>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 }
