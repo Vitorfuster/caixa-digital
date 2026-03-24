@@ -2,7 +2,7 @@ import React from "react";
 
 import { Routes, Route, BrowserRouter as Router } from "react-router-dom";
 
-import { Home, Daily } from "../containers";
+import { Home, Daily, CloseBox } from "../containers";
 
 function Rotas() {
   return (
@@ -10,6 +10,8 @@ function Rotas() {
       <Routes>
         <Route element={<Home />} path="/" />
         <Route element={<Daily />} path="daily" />
+
+        <Route element={<CloseBox />} path="closebox" />
       </Routes>
     </Router>
   );

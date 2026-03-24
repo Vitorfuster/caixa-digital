@@ -23,6 +23,7 @@ import {
   Th,
   Td,
   CellInput,
+  CellSelect,
   ActionContainer,
   AddMovementBtn,
   RegisterExpenseBtn,
@@ -42,6 +43,9 @@ import {
   ExpenseDesc,
   ExpenseValue,
   DeleteButton,
+  LeftActions,
+  ChangeLayoutBtn,
+  CloseBoxBtn,
 } from "./style";
 import { formatDate } from "../../utils/FomatData";
 
@@ -58,6 +62,16 @@ export function Daily() {
     window.location.replace(`daily?day=${dataFormatada}`);
   }
 
+  const formatMoney = (val) => {
+    if (!val && val !== 0) return "";
+    let num = Number(val);
+    if (isNaN(num)) return val;
+    return num.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  };
+
   const columns = [
     "id",
     "local",
@@ -65,6 +79,7 @@ export function Daily() {
     "quantidade",
     "preco",
     "desconto",
+    "total",
     "dinheiro",
     "cartao",
     "pix",
@@ -80,6 +95,7 @@ export function Daily() {
       quantidade: "",
       preco: "",
       desconto: "",
+      total: "",
       dinheiro: "",
       cartao: "",
       pix: "",
@@ -110,6 +126,9 @@ export function Daily() {
   const [movType, setMovType] = useState("in");
   const [movQuantity, setMovQuantity] = useState("");
   const [movements, setMovements] = useState([]);
+
+  // Estado que controla o layout das planilhas: false = lado a lado / true = 100% largura (empilhada)
+  const [isFullWidth, setIsFullWidth] = useState(false);
 
   // Busca dados no back_end
   useEffect(() => {
@@ -171,6 +190,8 @@ export function Daily() {
           return newItem;
         });
 
+        console.log("dailyCompleta: ", daily_formated);
+
         // Filtra as linhas para adicionar os itens nos lugares certos
         const newGas = gas.map((item) => {
           const newDaily = daily_formated.filter(
@@ -179,12 +200,16 @@ export function Daily() {
 
           if (newDaily.length > 0) {
             let elementReturn;
+            let skip = false;
 
             newDaily.forEach((element) => {
               if (element.id_db.split("-")[2] === "GAS") {
                 elementReturn = element;
+                skip = true;
               } else {
-                return item;
+                if (skip === false) {
+                  elementReturn = item;
+                }
               }
             });
 
@@ -201,12 +226,16 @@ export function Daily() {
 
           if (newDaily.length > 0) {
             let elementReturn;
+            let skip = false;
 
             newDaily.forEach((element) => {
               if (element.id_db.split("-")[2] === "WATER") {
                 elementReturn = element;
+                skip = true;
               } else {
-                return item;
+                if (skip === false) {
+                  elementReturn = item;
+                }
               }
             });
 
@@ -215,6 +244,9 @@ export function Daily() {
             return item;
           }
         });
+
+        console.log("newGas: ", newGas);
+        console.log("newWater: ", newWater);
 
         setGas(newGas);
         setWater(newWater);
@@ -239,10 +271,14 @@ export function Daily() {
           `movement/${criarData(day)}`,
         );
 
+        console.log(movementsResponse);
+
         if (movementsResponse.length > 0) {
           setMovements(movementsResponse);
         }
-      } catch (error) {}
+      } catch (error) {
+        console.log(error);
+      }
     };
 
     getItens();
@@ -250,6 +286,7 @@ export function Daily() {
     getExpenses();
     getDaily();
   }, []);
+
   // Temporizador
   useEffect(() => {
     if (timer > 0) {
@@ -261,6 +298,8 @@ export function Daily() {
       verification();
     }
   }, [timer]);
+
+  console.log("movement: ", movements);
 
   // Função de verificação e envio
   const verification = async () => {
@@ -278,9 +317,16 @@ export function Daily() {
         if (item.save_id !== saveHash) {
           const newItem = {
             ...item,
+            total:
+              item.quantidade && item.preco && item.desconto === ""
+                ? item.quantidade * item.preco
+                : item.quantidade && item.preco && item.desconto !== ""
+                  ? item.quantidade * item.preco - item.desconto
+                  : null,
             id_db: `LINE-${item.id}-GAS-${day}`,
             date: criarData(day),
             save_id: saveHash,
+            reset: item.reset === 1 ? true : false,
           };
 
           sendPut.push(newItem);
@@ -302,13 +348,19 @@ export function Daily() {
       ) {
         const newItem = {
           ...item,
+          total:
+            item.quantidade && item.preco && item.desconto === ""
+              ? item.quantidade * item.preco
+              : item.quantidade && item.preco && item.desconto !== ""
+                ? item.quantidade * item.preco - item.desconto
+                : null,
           id_db: `LINE-${item.id}-GAS-${day}`,
           date: criarData(day),
           save_id: SHA256(
             `${item.local}-${item.produto}-${item.quantidade}-${item.preco}-${item.desconto}-${item.dinheiro}-${item.cartao}-${item.pix}-${item.obs}`,
           ).toString(),
         };
-
+        console.log("Item a ser enviado:", newItem);
         sendPost.push(newItem);
         return newItem;
       } else {
@@ -325,9 +377,16 @@ export function Daily() {
         if (item.save_id !== saveHash) {
           const newItem = {
             ...item,
+            total:
+              item.quantidade && item.preco && item.desconto === ""
+                ? item.quantidade * item.preco
+                : item.quantidade && item.preco && item.desconto !== ""
+                  ? item.quantidade * item.preco - item.desconto
+                  : null,
             id_db: `LINE-${item.id}-WATER-${day}`,
             date: criarData(day),
             save_id: saveHash,
+            reset: item.reset === 1 ? true : false,
           };
 
           sendPut.push(newItem);
@@ -349,6 +408,12 @@ export function Daily() {
       ) {
         const newItem = {
           ...item,
+          total:
+            item.quantidade && item.preco && item.desconto === ""
+              ? item.quantidade * item.preco
+              : item.quantidade && item.preco && item.desconto !== ""
+                ? item.quantidade * item.preco - item.desconto
+                : null,
           id_db: `LINE-${item.id}-WATER-${day}`,
           date: criarData(day),
           save_id: SHA256(
@@ -397,10 +462,27 @@ export function Daily() {
     //
   };
 
+  // IMPLEMENTAR A FUNÇÃO RESET ABAIXO PARA O REGISTRO DE AGUA
+
   // Função de registro gás
   const handleGasChange = (index, field, value) => {
     const newGas = [...gas];
-    newGas[index] = { ...newGas[index], [field]: value };
+    newGas[index] = {
+      ...newGas[index],
+      [field]: value,
+      reset:
+        gas[index].reset === 1 || field === "produto" || field === "quantidade"
+          ? 1
+          : false,
+    };
+
+    if (field === "produto" && value !== "") {
+      const selectedItem = itens?.find((item) => item.id === Number(value));
+      if (selectedItem && selectedItem.sale_price !== undefined) {
+        newGas[index].preco = selectedItem.sale_price;
+      }
+    }
+
     setGas(newGas);
 
     setChange(1); //
@@ -412,7 +494,24 @@ export function Daily() {
   // Função de registro água
   const handleWaterChange = (index, field, value) => {
     const newWater = [...water];
-    newWater[index] = { ...newWater[index], [field]: value };
+    newWater[index] = {
+      ...newWater[index],
+      [field]: value,
+      reset:
+        water[index].reset === 1 ||
+        field === "produto" ||
+        field === "quantidade"
+          ? 1
+          : false,
+    };
+
+    if (field === "produto" && value !== "") {
+      const selectedItem = itens?.find((item) => item.id === Number(value));
+      if (selectedItem && selectedItem.sale_price !== undefined) {
+        newWater[index].preco = selectedItem.sale_price;
+      }
+    }
+
     setWater(newWater);
 
     setChange(1);
@@ -512,27 +611,33 @@ export function Daily() {
     }
   };
 
-  console.log(movements);
-
-  // PRECISO AGORA FAZER O BOTÃO ADICIONAR MOVIMENTAÇÃO FUNCIONAR, AO SER CLICADO ELE DEVE ADICIONAR AS MOVIMENTAÇÕES E BAIXAR DO ESTOQUE, ELE TERA O CAMPO ITEM COMO SELECT PARA SER O ITEM DO ESTOQUE QUE ESTÁ SENDO MOVIMENTADO
-
-  // APOS ISSO, DEVO FORMATAR OS CAMPOS DA PLANILHA, ALGUNS VÃO SER SELECT, OUTROS VÃO ACEITAR SOMENTE UM TIPO DE DADOS
-
-  // APOS ISSO, DEVO CONSTRUIR A PÁGINA DE FECHAMENTO DE CAIXA
+  console.log(gas);
 
   return (
     <Container>
       <Header>
         <Title>Ferreira Gás e Água - Controle Diário</Title>
+        <CloseBoxBtn
+          onClick={() => {
+            navigate(`/closebox?day=${day}`);
+          }}
+        >
+          Fechar Caixa
+        </CloseBoxBtn>
       </Header>
       <Content>
         <ActionContainer>
-          <AddMovementBtn onClick={() => setIsMovModalOpen(true)}>
-            Adicionar Movimentação
-          </AddMovementBtn>
-          <RegisterExpenseBtn onClick={() => setIsModalOpen(true)}>
-            Registrar Despesas
-          </RegisterExpenseBtn>
+          <LeftActions>
+            <AddMovementBtn onClick={() => setIsMovModalOpen(true)}>
+              Adicionar Movimentação
+            </AddMovementBtn>
+            <RegisterExpenseBtn onClick={() => setIsModalOpen(true)}>
+              Registrar Despesas
+            </RegisterExpenseBtn>
+          </LeftActions>
+          <ChangeLayoutBtn onClick={() => setIsFullWidth(!isFullWidth)}>
+            Alterar Layout
+          </ChangeLayoutBtn>
         </ActionContainer>
 
         {movements.length > 0 && (
@@ -608,7 +713,7 @@ export function Daily() {
           </ExpensesList>
         )}
 
-        <Sheets>
+        <Sheets isFullWidth={isFullWidth}>
           <SheetGas>
             <SectionTitle themeColor="#e67e22">Gás</SectionTitle>
             <TableWrapper>
@@ -616,7 +721,13 @@ export function Daily() {
                 <THead themeColor="#e67e22">
                   <Tr>
                     {columns.map((col) => (
-                      <Th key={col}>{col}</Th>
+                      <Th key={col} colName={col}>
+                        {col === "quantidade"
+                          ? "QTD"
+                          : col === "pix"
+                            ? "__pix__"
+                            : col}
+                      </Th>
                     ))}
                   </Tr>
                 </THead>
@@ -625,8 +736,8 @@ export function Daily() {
                   {gas.map((row, i) => (
                     <Tr key={`gas-${i}`}>
                       {columns.map((col) => (
-                        <Td key={`gas-${i}-${col}`}>
-                          {col === "ID" ? (
+                        <Td key={`gas-${i}-${col}`} colName={col}>
+                          {col === "ID" || col === "id" ? (
                             <div
                               style={{
                                 textAlign: "center",
@@ -636,14 +747,116 @@ export function Daily() {
                             >
                               {row.id}
                             </div>
-                          ) : (
-                            <CellInput
-                              type="text"
+                          ) : col === "total" ? (
+                            <div
+                              style={{
+                                textAlign: "center",
+                                fontWeight: "bold",
+                                padding: "10px 12px",
+                              }}
+                            >
+                              {(() => {
+                                const qtd = Number(row.quantidade) || 0;
+                                const preco = Number(row.preco) || 0;
+                                const desc = Number(row.desconto) || 0;
+                                const calc = qtd * preco - desc;
+
+                                let textColor = "#333";
+                                if (calc > 0) {
+                                  let sum = 0;
+                                  if (row.dinheiro && Number(row.dinheiro) > 0)
+                                    sum += Number(row.dinheiro);
+                                  if (row.cartao && Number(row.cartao) > 0)
+                                    sum += Number(row.cartao);
+                                  if (row.pix && Number(row.pix) > 0)
+                                    sum += Number(row.pix);
+
+                                  if (Math.abs(calc - sum) < 0.01) {
+                                    textColor = "#27ae60"; // verde
+                                  } else if (sum > 0) {
+                                    textColor = "#e74c3c"; // vermelho
+                                  }
+                                }
+
+                                return calc > 0 ? (
+                                  <span style={{ color: textColor }}>
+                                    {formatMoney(calc)}
+                                  </span>
+                                ) : (
+                                  ""
+                                );
+                              })()}
+                            </div>
+                          ) : col === "local" ? (
+                            <CellSelect
                               focusColor="#e67e22"
                               value={row[col]}
                               onChange={(e) =>
                                 handleGasChange(i, col, e.target.value)
                               }
+                            >
+                              <option value=""></option>
+                              <option value="Portaria">Portaria</option>
+                              <option value="Entrega">Entrega</option>
+                            </CellSelect>
+                          ) : col === "produto" ? (
+                            <CellSelect
+                              focusColor="#e67e22"
+                              value={row[col]}
+                              onChange={(e) =>
+                                handleGasChange(i, col, e.target.value)
+                              }
+                            >
+                              <option value=""></option>
+                              {itens &&
+                                itens.map((item) => (
+                                  <option key={item.id} value={item.id}>
+                                    {item.name}
+                                  </option>
+                                ))}
+                            </CellSelect>
+                          ) : (
+                            <CellInput
+                              type="text"
+                              focusColor="#e67e22"
+                              value={
+                                [
+                                  "preco",
+                                  "desconto",
+                                  "dinheiro",
+                                  "cartao",
+                                  "pix",
+                                ].includes(col)
+                                  ? formatMoney(row[col])
+                                  : row[col]
+                              }
+                              onChange={(e) => {
+                                let val = e.target.value;
+
+                                if (col === "quantidade") {
+                                  val = val.replace(/\D/g, "");
+                                }
+
+                                if (
+                                  [
+                                    "preco",
+                                    "desconto",
+                                    "dinheiro",
+                                    "cartao",
+                                    "pix",
+                                  ].includes(col)
+                                ) {
+                                  val = val.replace(/\D/g, "");
+                                  if (val !== "") {
+                                    if (Number(val) === 0) {
+                                      val = "";
+                                    } else {
+                                      val = (Number(val) / 100).toFixed(2);
+                                    }
+                                  }
+                                }
+                                handleGasChange(i, col, val);
+                              }}
                             />
                           )}
                         </Td>
@@ -662,7 +875,13 @@ export function Daily() {
                 <THead themeColor="#2980b9">
                   <Tr>
                     {columns.map((col) => (
-                      <Th key={col}>{col}</Th>
+                      <Th key={col} colName={col}>
+                        {col === "quantidade"
+                          ? "QTD"
+                          : col === "pix"
+                            ? "__pix__"
+                            : col}
+                      </Th>
                     ))}
                   </Tr>
                 </THead>
@@ -670,8 +889,8 @@ export function Daily() {
                   {water.map((row, i) => (
                     <Tr key={`water-${i}`}>
                       {columns.map((col) => (
-                        <Td key={`water-${i}-${col}`}>
-                          {col === "ID" ? (
+                        <Td key={`water-${i}-${col}`} colName={col}>
+                          {col === "ID" || col === "id" ? (
                             <div
                               style={{
                                 textAlign: "center",
@@ -681,14 +900,116 @@ export function Daily() {
                             >
                               {row.id}
                             </div>
-                          ) : (
-                            <CellInput
-                              type="text"
+                          ) : col === "total" ? (
+                            <div
+                              style={{
+                                textAlign: "center",
+                                fontWeight: "bold",
+                                padding: "10px 12px",
+                              }}
+                            >
+                              {(() => {
+                                const qtd = Number(row.quantidade) || 0;
+                                const preco = Number(row.preco) || 0;
+                                const desc = Number(row.desconto) || 0;
+                                const calc = qtd * preco - desc;
+
+                                let textColor = "#333";
+                                if (calc > 0) {
+                                  let sum = 0;
+                                  if (row.dinheiro && Number(row.dinheiro) > 0)
+                                    sum += Number(row.dinheiro);
+                                  if (row.cartao && Number(row.cartao) > 0)
+                                    sum += Number(row.cartao);
+                                  if (row.pix && Number(row.pix) > 0)
+                                    sum += Number(row.pix);
+
+                                  if (Math.abs(calc - sum) < 0.01) {
+                                    textColor = "#27ae60"; // verde
+                                  } else if (sum > 0) {
+                                    textColor = "#e74c3c"; // vermelho
+                                  }
+                                }
+
+                                return calc > 0 ? (
+                                  <span style={{ color: textColor }}>
+                                    {formatMoney(calc)}
+                                  </span>
+                                ) : (
+                                  ""
+                                );
+                              })()}
+                            </div>
+                          ) : col === "local" ? (
+                            <CellSelect
                               focusColor="#2980b9"
                               value={row[col]}
                               onChange={(e) =>
                                 handleWaterChange(i, col, e.target.value)
                               }
+                            >
+                              <option value=""></option>
+                              <option value="Portaria">Portaria</option>
+                              <option value="Entrega">Entrega</option>
+                            </CellSelect>
+                          ) : col === "produto" ? (
+                            <CellSelect
+                              focusColor="#2980b9"
+                              value={row[col]}
+                              onChange={(e) =>
+                                handleWaterChange(i, col, e.target.value)
+                              }
+                            >
+                              <option value=""></option>
+                              {itens &&
+                                itens.map((item) => (
+                                  <option key={item.id} value={item.id}>
+                                    {item.name}
+                                  </option>
+                                ))}
+                            </CellSelect>
+                          ) : (
+                            <CellInput
+                              type="text"
+                              focusColor="#2980b9"
+                              value={
+                                [
+                                  "preco",
+                                  "desconto",
+                                  "dinheiro",
+                                  "cartao",
+                                  "pix",
+                                ].includes(col)
+                                  ? formatMoney(row[col])
+                                  : row[col]
+                              }
+                              onChange={(e) => {
+                                let val = e.target.value;
+
+                                if (col === "quantidade") {
+                                  val = val.replace(/\D/g, "");
+                                }
+
+                                if (
+                                  [
+                                    "preco",
+                                    "desconto",
+                                    "dinheiro",
+                                    "cartao",
+                                    "pix",
+                                  ].includes(col)
+                                ) {
+                                  val = val.replace(/\D/g, "");
+                                  if (val !== "") {
+                                    if (Number(val) === 0) {
+                                      val = "";
+                                    } else {
+                                      val = (Number(val) / 100).toFixed(2);
+                                    }
+                                  }
+                                }
+                                handleWaterChange(i, col, val);
+                              }}
                             />
                           )}
                         </Td>
@@ -701,13 +1022,6 @@ export function Daily() {
           </SheetWater>
         </Sheets>
       </Content>
-      <button
-        onClick={() => {
-          console.log(2);
-        }}
-      >
-        console.log
-      </button>
 
       {isModalOpen && (
         <ModalOverlay

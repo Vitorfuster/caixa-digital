@@ -1,9 +1,26 @@
 import styled from "styled-components";
 
+const getColumnWidth = (col) => {
+  switch (col) {
+    case "id": return "40px";
+    case "local": return "100px";
+    case "produto": return "160px";
+    case "quantidade": return "65px";
+    case "preco": return "110px";
+    case "desconto": return "110px";
+    case "total": return "120px";
+    case "dinheiro": return "120px";
+    case "cartao": return "120px";
+    case "pix": return "120px";
+    case "obs": return "100%";
+    default: return "auto";
+  }
+};
+
 export const Container = styled.div`
   min-height: 100vh;
   background-color: #f4f6f9;
-  padding: 30px;
+  padding: 15px;
   font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 `;
 
@@ -14,6 +31,10 @@ export const Header = styled.div`
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
 `;
 
 export const Title = styled.h1`
@@ -32,8 +53,8 @@ export const Content = styled.div`
 
 export const Sheets = styled.div`
   display: flex;
-  flex-direction: row;
-  gap: 30px;
+  flex-direction: ${(props) => (props.isFullWidth ? "column" : "row")};
+  gap: 10px;
   width: 100%;
 
   @media (max-width: 1400px) {
@@ -46,7 +67,7 @@ export const SheetCard = styled.div`
   background-color: #ffffff;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  padding: 25px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -82,6 +103,7 @@ export const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
   min-width: 900px;
+  margin: 0 auto;
 `;
 
 export const THead = styled.thead`
@@ -100,13 +122,14 @@ export const Tr = styled.tr`
 `;
 
 export const Th = styled.th`
-  padding: 14px 12px;
-  text-align: left;
+  padding: 8px 12px;
+  text-align: center;
   font-weight: 600;
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
+  width: ${(props) => getColumnWidth(props.colName)};
 `;
 
 export const Td = styled.td`
@@ -115,6 +138,8 @@ export const Td = styled.td`
   color: #495057;
   height: 44px;
   border-right: 1px solid #f1f4f8;
+  width: ${(props) => getColumnWidth(props.colName)};
+  ${(props) => props.colName === "obs" && `min-width: 200px;`}
 
   &:last-child {
     border-right: none;
@@ -128,10 +153,31 @@ export const CellInput = styled.input`
   border: none;
   background: transparent;
   outline: none;
+  padding: 10px 0px;
+  font-size: 14px;
+  color: #333;
+  font-family: inherit;
+  text-align: center;
+
+  &:focus {
+    background-color: rgba(255, 255, 255, 0.9);
+    box-shadow: inset 0 0 0 2px ${(props) => props.focusColor || "#000"};
+  }
+`;
+
+export const CellSelect = styled.select`
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  outline: none;
   padding: 10px 12px;
   font-size: 14px;
   color: #333;
   font-family: inherit;
+  appearance: none;
+  cursor: pointer;
 
   &:focus {
     background-color: rgba(255, 255, 255, 0.9);
@@ -141,9 +187,14 @@ export const CellInput = styled.input`
 
 export const ActionContainer = styled.div`
   display: flex;
-  justify-content: flex-start;
-  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
+`;
+
+export const LeftActions = styled.div`
+  display: flex;
+  gap: 20px;
 `;
 
 export const ActionButton = styled.button`
@@ -167,6 +218,16 @@ export const AddMovementBtn = styled(ActionButton)`
 
 export const RegisterExpenseBtn = styled(ActionButton)`
   background-color: #e74c3c;
+`;
+
+export const ChangeLayoutBtn = styled(ActionButton)`
+  background-color: #8e44ad;
+`;
+
+export const CloseBoxBtn = styled(ActionButton)`
+  background-color: #f39c12;
+  font-size: 18px;
+  padding: 14px 30px;
 `;
 
 export const ModalOverlay = styled.div`
