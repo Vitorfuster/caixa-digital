@@ -126,6 +126,7 @@ export function Daily() {
   const [movType, setMovType] = useState("in");
   const [movQuantity, setMovQuantity] = useState("");
   const [movements, setMovements] = useState([]);
+  const [block, setBlock] = useState(false);
 
   // Estado que controla o layout das planilhas: false = lado a lado / true = 100% largura (empilhada)
   const [isFullWidth, setIsFullWidth] = useState(false);
@@ -294,12 +295,17 @@ export function Daily() {
         setTimer(timer - 1);
       }, 1000);
     } else if (change === 1) {
-      setChange(0);
-      verification();
+      if (block === true) {
+        setBlock(false);
+        setTimer(timer + 3);
+      } else {
+        setChange(0);
+        verification();
+      }
     }
   }, [timer]);
 
-  console.log("movement: ", movements);
+  console.log(timer);
 
   // Função de verificação e envio
   const verification = async () => {
@@ -330,7 +336,28 @@ export function Daily() {
           };
 
           sendPut.push(newItem);
-          return newItem;
+
+          // Verifica se a linha foi completamente limpa, caso sim, remove o save_id da linha
+          if (
+            item.local !== "" ||
+            item.produto !== "" ||
+            item.quantidade !== "" ||
+            item.preco !== "" ||
+            item.desconto !== "" ||
+            item.dinheiro !== "" ||
+            item.cartao !== "" ||
+            item.pix !== "" ||
+            item.obs !== ""
+          ) {
+            return newItem;
+          } else {
+            const resetLine = {
+              ...item,
+              save_id: "",
+            };
+
+            return resetLine;
+          }
         } else {
           return item;
         }
@@ -360,7 +387,6 @@ export function Daily() {
             `${item.local}-${item.produto}-${item.quantidade}-${item.preco}-${item.desconto}-${item.dinheiro}-${item.cartao}-${item.pix}-${item.obs}`,
           ).toString(),
         };
-        console.log("Item a ser enviado:", newItem);
         sendPost.push(newItem);
         return newItem;
       } else {
@@ -390,7 +416,28 @@ export function Daily() {
           };
 
           sendPut.push(newItem);
-          return newItem;
+
+          // Verifica se a linha foi completamente limpa, caso sim, remove o save_id da linha
+          if (
+            item.local !== "" ||
+            item.produto !== "" ||
+            item.quantidade !== "" ||
+            item.preco !== "" ||
+            item.desconto !== "" ||
+            item.dinheiro !== "" ||
+            item.cartao !== "" ||
+            item.pix !== "" ||
+            item.obs !== ""
+          ) {
+            return newItem;
+          } else {
+            const resetLine = {
+              ...item,
+              save_id: "",
+            };
+
+            return resetLine;
+          }
         } else {
           return item;
         }
@@ -487,8 +534,10 @@ export function Daily() {
 
     setChange(1); //
     if (timer === 0) {
-      setTimer(5);
+      setTimer(3);
     }
+
+    setBlock(true);
   };
 
   // Função de registro água
@@ -514,10 +563,12 @@ export function Daily() {
 
     setWater(newWater);
 
-    setChange(1);
+    setChange(1); //
     if (timer === 0) {
-      setTimer(5);
+      setTimer(3);
     }
+
+    setBlock(true);
   };
 
   function criarData(dataString) {
@@ -809,11 +860,21 @@ export function Daily() {
                             >
                               <option value=""></option>
                               {itens &&
-                                itens.map((item) => (
-                                  <option key={item.id} value={item.id}>
-                                    {item.name}
-                                  </option>
-                                ))}
+                                itens
+                                  .filter(
+                                    (item) =>
+                                      item.id === 1 ||
+                                      item.id === 2 ||
+                                      item.id === 5 ||
+                                      item.id === 7 ||
+                                      item.id === 8 ||
+                                      item.id === 9,
+                                  )
+                                  .map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                      {item.name}
+                                    </option>
+                                  ))}
                             </CellSelect>
                           ) : (
                             <CellInput
@@ -962,11 +1023,18 @@ export function Daily() {
                             >
                               <option value=""></option>
                               {itens &&
-                                itens.map((item) => (
-                                  <option key={item.id} value={item.id}>
-                                    {item.name}
-                                  </option>
-                                ))}
+                                itens
+                                  .filter(
+                                    (item) =>
+                                      item.id === 3 ||
+                                      item.id === 4 ||
+                                      item.id === 6,
+                                  )
+                                  .map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                      {item.name}
+                                    </option>
+                                  ))}
                             </CellSelect>
                           ) : (
                             <CellInput

@@ -102,6 +102,8 @@ export function CloseBox() {
         const { data: despesas } = await api.get(`/expense/${criarData(day)}`);
         const { data: movement } = await api.get(`/movement/${criarData(day)}`);
 
+        console.log(movement);
+
         // Envia as despesas para o estado
         setExpenses(despesas);
 
@@ -144,12 +146,9 @@ export function CloseBox() {
           }
         });
 
-        // Somando o valor de estoque
-        newStock.p13.estoque = newStock.p13.cheio + newStock.p13.vazio;
-        newStock.p45.estoque = newStock.p45.cheio + newStock.p45.vazio;
-        newStock.aguas.estoque = newStock.aguas.cheio + newStock.aguas.vazio;
+        console.log("STOCK ANTES DA REVERT", newStock);
 
-        // Reverter o estoque para 1 dia atrás (padrão de envio)
+        // Reverter o estoque para 1 dia atrás diaria (padrão de envio)
         diaria.forEach((day) => {
           if (day.item_id === 1) {
             newStock.p13.cheio += day.quantity;
@@ -190,7 +189,66 @@ export function CloseBox() {
             newStock.p45.vazio += day.quantity;
           }
         });
+
+        // Reverter o estoque antes da movimentação
+        movement.forEach((line) => {
+          if (line.item_id === 5) {
+            if (line.type === "in") {
+              newStock.p13.cheio -= line.quantity;
+            } else {
+              newStock.p13.cheio += line.quantity;
+            }
+          }
+
+          if (line.item_id === 2) {
+            if (line.type === "in") {
+              newStock.p13.vazio -= line.quantity;
+            } else {
+              newStock.p13.vazio += line.quantity;
+            }
+          }
+
+          if (line.item_id === 6) {
+            if (line.type === "in") {
+              newStock.aguas.cheio -= line.quantity;
+            } else {
+              newStock.aguas.cheio += line.quantity;
+            }
+          }
+
+          if (line.item_id === 4) {
+            if (line.type === "in") {
+              newStock.aguas.vazio -= line.quantity;
+            } else {
+              newStock.aguas.vazio += line.quantity;
+            }
+          }
+
+          if (line.item_id === 8) {
+            if (line.type === "in") {
+              newStock.p45.cheio -= line.quantity;
+            } else {
+              newStock.p45.cheio += line.quantity;
+            }
+          }
+
+          if (line.item_id === 9) {
+            if (line.type === "in") {
+              newStock.p45.vazio -= line.quantity;
+            } else {
+              newStock.p45.vazio += line.quantity;
+            }
+          }
+        });
+
+        // Somando o valor de estoque
+        newStock.p13.estoque = newStock.p13.cheio + newStock.p13.vazio;
+        newStock.p45.estoque = newStock.p45.cheio + newStock.p45.vazio;
+        newStock.aguas.estoque = newStock.aguas.cheio + newStock.aguas.vazio;
+
         setStock(newStock);
+
+        console.log("STOCK DEPOIS DA REVERT", newStock);
 
         // Mapeamento fechamento
         let newFechamento = {};
@@ -339,6 +397,8 @@ export function CloseBox() {
                     day.quantity,
                 },
               };
+
+              newFechamento.total.total += day.total;
 
               newFechamento.total.lucro +=
                 (day.total / day.quantity -
@@ -654,6 +714,9 @@ export function CloseBox() {
                     day.quantity,
                 },
               };
+
+              newFechamento.total.total += day.total;
+
               newFechamento.total.lucro +=
                 (day.total / day.quantity -
                   itemInformations[0].purchase_price) *
