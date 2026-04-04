@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { replace, useSearchParams, useNavigate } from "react-router-dom";
 import SHA256 from "crypto-js/sha256";
 
+import { ToastContainer, toast } from "react-toastify";
+
 // API
 import api from "../../services/api";
 
@@ -83,6 +85,7 @@ export function Daily() {
     "dinheiro",
     "cartao",
     "pix",
+    "vale",
     "obs",
   ];
 
@@ -100,6 +103,7 @@ export function Daily() {
       cartao: "",
       pix: "",
       obs: "",
+      vale: "",
       save_id: "",
       date: "",
     }));
@@ -176,6 +180,8 @@ export function Daily() {
             cartao:
               item.card === null || item.card === undefined ? "" : item.card,
             pix: item.pix === null || item.pix === undefined ? "" : item.pix,
+            vale:
+              item.vale === null || item.vale === undefined ? "" : item.vale,
             obs:
               item.observation === null || item.observation === undefined
                 ? ""
@@ -347,6 +353,7 @@ export function Daily() {
             item.dinheiro !== "" ||
             item.cartao !== "" ||
             item.pix !== "" ||
+            item.vale !== "" ||
             item.obs !== ""
           ) {
             return newItem;
@@ -371,6 +378,7 @@ export function Daily() {
           item.dinheiro !== "" ||
           item.cartao !== "" ||
           item.pix !== "" ||
+          item.vale !== "" ||
           item.obs !== "")
       ) {
         const newItem = {
@@ -397,7 +405,7 @@ export function Daily() {
     const sendWater = water.map((item) => {
       if (item.save_id !== "") {
         const saveHash = SHA256(
-          `${item.local}-${item.produto}-${item.quantidade}-${item.preco}-${item.desconto}-${item.dinheiro}-${item.cartao}-${item.pix}-${item.obs}`,
+          `${item.local}-${item.produto}-${item.quantidade}-${item.preco}-${item.desconto}-${item.dinheiro}-${item.cartao}-${item.pix}-${item.vale}-${item.obs}`,
         ).toString();
 
         if (item.save_id !== saveHash) {
@@ -427,6 +435,7 @@ export function Daily() {
             item.dinheiro !== "" ||
             item.cartao !== "" ||
             item.pix !== "" ||
+            item.vale !== "" ||
             item.obs !== ""
           ) {
             return newItem;
@@ -451,6 +460,7 @@ export function Daily() {
           item.dinheiro !== "" ||
           item.cartao !== "" ||
           item.pix !== "" ||
+          item.vale !== "" ||
           item.obs !== "")
       ) {
         const newItem = {
@@ -464,7 +474,7 @@ export function Daily() {
           id_db: `LINE-${item.id}-WATER-${day}`,
           date: criarData(day),
           save_id: SHA256(
-            `${item.local}-${item.produto}-${item.quantidade}-${item.preco}-${item.desconto}-${item.dinheiro}-${item.cartao}-${item.pix}-${item.obs}`,
+            `${item.local}-${item.produto}-${item.quantidade}-${item.preco}-${item.desconto}-${item.dinheiro}-${item.cartao}-${item.pix}-${item.vale}-${item.obs}`,
           ).toString(),
         };
 
@@ -484,9 +494,16 @@ export function Daily() {
       console.log("itens para enviar: ", sendPost);
 
       try {
-        const response = await api.post("/daily", { daily: sendPost });
+        const response = await toast.promise(
+          api.post("/daily", { daily: sendPost }),
+          {
+            pending: "Salvando",
+            success: "Salvo com sucesso!",
+            error: "Erro ao salvar dados",
+          },
+        );
 
-        console.log("response back_end", response);
+        console.log("response back_end 2", response);
       } catch (error) {
         console.log("deu errado");
         console.log(error);
@@ -497,9 +514,16 @@ export function Daily() {
       console.log("itens para atualizar: ", sendPut);
 
       try {
-        const response = await api.put("/daily", { daily: sendPut });
+        const response = await toast.promise(
+          api.put("/daily", { daily: sendPut }),
+          {
+            pending: "Atualizando",
+            error: "Erro ao atualizar dados",
+            success: "Atualizado com sucesso!",
+          },
+        );
 
-        console.log("response back_end", response);
+        console.log("response back_end 2", response);
       } catch (error) {
         console.log("deu errado");
         console.log(error);

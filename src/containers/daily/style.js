@@ -2,18 +2,30 @@ import styled from "styled-components";
 
 const getColumnWidth = (col) => {
   switch (col) {
-    case "id": return "40px";
-    case "local": return "100px";
-    case "produto": return "160px";
-    case "quantidade": return "65px";
-    case "preco": return "110px";
-    case "desconto": return "110px";
-    case "total": return "120px";
-    case "dinheiro": return "120px";
-    case "cartao": return "120px";
-    case "pix": return "120px";
-    case "obs": return "100%";
-    default: return "auto";
+    case "id":
+      return "40px";
+    case "local":
+      return "100px";
+    case "produto":
+      return "160px";
+    case "quantidade":
+      return "65px";
+    case "preco":
+      return "110px";
+    case "desconto":
+      return "110px";
+    case "total":
+      return "120px";
+    case "dinheiro":
+      return "120px";
+    case "cartao":
+      return "120px";
+    case "pix":
+      return "120px";
+    case "obs":
+      return "100%";
+    default:
+      return "auto";
   }
 };
 
