@@ -109,6 +109,26 @@ export function Daily() {
     }));
   };
 
+  const getTooltipDate = (createdAt, updatedAt) => {
+    if (!createdAt && !updatedAt) return undefined;
+
+    const creatStr = createdAt
+      ? new Date(createdAt).toLocaleString("pt-BR")
+      : "";
+    const updtStr = updatedAt
+      ? new Date(updatedAt).toLocaleString("pt-BR")
+      : "";
+
+    if (!createdAt) return `Atualização: ${updtStr}`;
+    if (!updatedAt) return `Criação: ${creatStr}`;
+
+    if (creatStr === updtStr) {
+      return `Atualização: ${updtStr}`;
+    }
+
+    return `Criação: ${creatStr}\nAtualização: ${updtStr}`;
+  };
+
   const [itens, setItens] = useState();
 
   // Itens das planilhas
@@ -131,6 +151,7 @@ export function Daily() {
   const [movQuantity, setMovQuantity] = useState("");
   const [movements, setMovements] = useState([]);
   const [block, setBlock] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Estado que controla o layout das planilhas: false = lado a lado / true = 100% largura (empilhada)
   const [isFullWidth, setIsFullWidth] = useState(false);
@@ -192,6 +213,9 @@ export function Daily() {
                 : item.save_id,
             date:
               item.date === null || item.date === undefined ? "" : item.date,
+
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
           };
 
           return newItem;
@@ -297,6 +321,10 @@ export function Daily() {
   // Temporizador
   useEffect(() => {
     if (timer > 0) {
+      if (loading === false) {
+        const toastId = toast.loading("Atualizando...");
+        setLoading(toastId);
+      }
       setTimeout(() => {
         setTimer(timer - 1);
       }, 1000);
@@ -306,12 +334,20 @@ export function Daily() {
         setTimer(timer + 3);
       } else {
         setChange(0);
+        toast.update(loading, {
+          render: "Finalizado!",
+          type: "success",
+          isLoading: false,
+          autoClose: 1500,
+        });
+        setLoading(false);
         verification();
       }
     }
   }, [timer]);
 
   console.log(timer);
+  console.log("Gás: ", gas);
 
   // Função de verificação e envio
   const verification = async () => {
@@ -339,6 +375,8 @@ export function Daily() {
             date: criarData(day),
             save_id: saveHash,
             reset: item.reset === 1 ? true : false,
+
+            updatedAt: new Date().toISOString(),
           };
 
           sendPut.push(newItem);
@@ -361,6 +399,8 @@ export function Daily() {
             const resetLine = {
               ...item,
               save_id: "",
+              updatedAt: undefined,
+              createdAt: undefined,
             };
 
             return resetLine;
@@ -394,8 +434,12 @@ export function Daily() {
           save_id: SHA256(
             `${item.local}-${item.produto}-${item.quantidade}-${item.preco}-${item.desconto}-${item.dinheiro}-${item.cartao}-${item.pix}-${item.obs}`,
           ).toString(),
+
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
         sendPost.push(newItem);
+
         return newItem;
       } else {
         return item;
@@ -421,6 +465,7 @@ export function Daily() {
             date: criarData(day),
             save_id: saveHash,
             reset: item.reset === 1 ? true : false,
+            updatedAt: new Date().toISOString(),
           };
 
           sendPut.push(newItem);
@@ -443,6 +488,8 @@ export function Daily() {
             const resetLine = {
               ...item,
               save_id: "",
+              updatedAt: undefined,
+              createdAt: undefined,
             };
 
             return resetLine;
@@ -476,9 +523,12 @@ export function Daily() {
           save_id: SHA256(
             `${item.local}-${item.produto}-${item.quantidade}-${item.preco}-${item.desconto}-${item.dinheiro}-${item.cartao}-${item.pix}-${item.vale}-${item.obs}`,
           ).toString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
 
         sendPost.push(newItem);
+
         return newItem;
       } else {
         return item;
@@ -494,19 +544,10 @@ export function Daily() {
       console.log("itens para enviar: ", sendPost);
 
       try {
-        const response = await toast.promise(
-          api.post("/daily", { daily: sendPost }),
-          {
-            pending: "Salvando",
-            success: "Salvo com sucesso!",
-            error: "Erro ao salvar dados",
-          },
-        );
-
-        console.log("response back_end 2", response);
+        await api.post("/daily", { daily: sendPost });
       } catch (error) {
-        console.log("deu errado");
-        console.log(error);
+        toast.error("Erro na atualização");
+        console.error(error);
       }
     }
 
@@ -514,26 +555,15 @@ export function Daily() {
       console.log("itens para atualizar: ", sendPut);
 
       try {
-        const response = await toast.promise(
-          api.put("/daily", { daily: sendPut }),
-          {
-            pending: "Atualizando",
-            error: "Erro ao atualizar dados",
-            success: "Atualizado com sucesso!",
-          },
-        );
-
-        console.log("response back_end 2", response);
+        await api.put("/daily", { daily: sendPut });
       } catch (error) {
-        console.log("deu errado");
-        console.log(error);
+        toast.error("Erro na atualização");
+        console.error(error);
       }
     }
 
     //
   };
-
-  // IMPLEMENTAR A FUNÇÃO RESET ABAIXO PARA O REGISTRO DE AGUA
 
   // Função de registro gás
   const handleGasChange = (index, field, value) => {
@@ -814,10 +844,15 @@ export function Daily() {
                         <Td key={`gas-${i}-${col}`} colName={col}>
                           {col === "ID" || col === "id" ? (
                             <div
+                              title={getTooltipDate(
+                                row.createdAt,
+                                row.updatedAt,
+                              )}
                               style={{
                                 textAlign: "center",
                                 fontWeight: "bold",
                                 padding: "10px 12px",
+                                cursor: "default",
                               }}
                             >
                               {row.id}
@@ -845,6 +880,8 @@ export function Daily() {
                                     sum += Number(row.cartao);
                                   if (row.pix && Number(row.pix) > 0)
                                     sum += Number(row.pix);
+                                  if (row.vale && Number(row.vale) > 0)
+                                    sum += Number(row.vale);
 
                                   if (Math.abs(calc - sum) < 0.01) {
                                     textColor = "#27ae60"; // verde
@@ -911,6 +948,7 @@ export function Daily() {
                                   "dinheiro",
                                   "cartao",
                                   "pix",
+                                  "vale",
                                 ].includes(col)
                                   ? formatMoney(row[col])
                                   : row[col]
@@ -929,6 +967,7 @@ export function Daily() {
                                     "dinheiro",
                                     "cartao",
                                     "pix",
+                                    "vale",
                                   ].includes(col)
                                 ) {
                                   val = val.replace(/\D/g, "");
@@ -977,10 +1016,15 @@ export function Daily() {
                         <Td key={`water-${i}-${col}`} colName={col}>
                           {col === "ID" || col === "id" ? (
                             <div
+                              title={getTooltipDate(
+                                row.createdAt,
+                                row.updatedAt,
+                              )}
                               style={{
                                 textAlign: "center",
                                 fontWeight: "bold",
                                 padding: "10px 12px",
+                                cursor: "default",
                               }}
                             >
                               {row.id}
@@ -1008,6 +1052,8 @@ export function Daily() {
                                     sum += Number(row.cartao);
                                   if (row.pix && Number(row.pix) > 0)
                                     sum += Number(row.pix);
+                                  if (row.vale && Number(row.vale) > 0)
+                                    sum += Number(row.vale);
 
                                   if (Math.abs(calc - sum) < 0.01) {
                                     textColor = "#27ae60"; // verde
@@ -1071,6 +1117,7 @@ export function Daily() {
                                   "dinheiro",
                                   "cartao",
                                   "pix",
+                                  "vale",
                                 ].includes(col)
                                   ? formatMoney(row[col])
                                   : row[col]
@@ -1089,6 +1136,7 @@ export function Daily() {
                                     "dinheiro",
                                     "cartao",
                                     "pix",
+                                    "vale",
                                   ].includes(col)
                                 ) {
                                   val = val.replace(/\D/g, "");

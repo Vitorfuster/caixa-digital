@@ -774,6 +774,7 @@ export function CloseBox() {
           resumeArray.money += day.money === null ? 0 : day.money;
           resumeArray.card += day.card === null ? 0 : day.card;
           resumeArray.pix += day.pix === null ? 0 : day.pix;
+          resumeArray.term += day.vale === null ? 0 : day.vale;
         });
 
         despesas.forEach((line) => {
@@ -781,7 +782,10 @@ export function CloseBox() {
         });
 
         resumeArray.total =
-          resumeArray.money + resumeArray.card + resumeArray.pix;
+          resumeArray.money +
+          resumeArray.card +
+          resumeArray.pix +
+          resumeArray.term;
 
         resumeArray.money = resumeArray.money - resumeArray.expense;
 
