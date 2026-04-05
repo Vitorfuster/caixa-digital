@@ -26,27 +26,12 @@ export function CloseBox() {
 
   const [stock, setStock] = useState({});
 
-  const [fechamento, setFechamento] = useState({});
+  const [fechamento, setFechamento] = useState([]);
 
   const stockMap = [
     { key: "p13", label: "P13" },
     { key: "p45", label: "P45" },
     { key: "aguas", label: "ÁGUAS" },
-  ];
-
-  const fechamentoMap = [
-    { key: "p13_portaria", label: "P13 portaria" },
-    { key: "p13_entrega", label: "P13 entrega" },
-    { key: "p13_completo", label: "P13 completo" },
-    { key: "p13_vazio", label: "P13 vazio" },
-    { key: "p45", label: "P45" },
-    { key: "p45_completo", label: "P45 completo" },
-    { key: "p45_vazio", label: "P45 vazio" },
-    { key: "agua_portaria", label: "Água portaria" },
-    { key: "agua_entrega", label: "Água entrega" },
-    { key: "agua_completo", label: "Água completo" },
-    { key: "agua_vazio", label: "Água galão" },
-    { key: "total", label: "Total" },
   ];
 
   const formatMoney = (val) => {
@@ -102,10 +87,154 @@ export function CloseBox() {
         const { data: despesas } = await api.get(`/expense/${criarData(day)}`);
         const { data: movement } = await api.get(`/movement/${criarData(day)}`);
 
-        console.log(movement);
+        let newClose = [];
+        let somaTotal = {};
 
-        // Envia as despesas para o estado
-        setExpenses(despesas);
+        let resumeArray = { money: 0, card: 0, pix: 0, expense: 0, term: 0 };
+
+        // Fechamento
+        diaria.forEach((day) => {
+          if (newClose.length === 0) {
+            if (day.item.observation === false) {
+              const newItem = {
+                item: `${day.item.name} ${day.location}`,
+                quantidade: day.quantity,
+                total: day.total,
+                media: day.total / day.quantity,
+                custo: day.item.purchase_price,
+                lucro:
+                  (day.total / day.quantity - day.item.purchase_price) *
+                  day.quantity,
+                obs: day.item.observation,
+              };
+              newClose.push(newItem);
+
+              somaTotal = {
+                item: "Total",
+                total: day.total,
+                lucro:
+                  (day.total / day.quantity - day.item.purchase_price) *
+                  day.quantity,
+              };
+            } else {
+              const newItem = {
+                item: day.item.name,
+                quantidade: day.quantity,
+                total: day.total,
+                media: day.total / day.quantity,
+                custo: day.item.purchase_price,
+                lucro:
+                  (day.total / day.quantity - day.item.purchase_price) *
+                  day.quantity,
+                obs: day.item.observation,
+              };
+              newClose.push(newItem);
+
+              somaTotal = {
+                item: "Total",
+                total: day.total,
+                lucro:
+                  (day.total / day.quantity - day.item.purchase_price) *
+                  day.quantity,
+              };
+            }
+          } else {
+            if (day.item.observation === false) {
+              const index = newClose.findIndex(
+                (line) => line.item === `${day.item.name} ${day.location}`,
+              );
+
+              if (index !== -1) {
+                newClose[index].quantidade += day.quantity;
+                newClose[index].total += day.total;
+                newClose[index].media =
+                  newClose[index].total / newClose[index].quantidade;
+                newClose[index].lucro =
+                  (newClose[index].total / newClose[index].quantidade -
+                    day.item.purchase_price) *
+                  newClose[index].quantidade;
+
+                somaTotal.total += day.total;
+                somaTotal.lucro +=
+                  (day.total / day.quantity - day.item.purchase_price) *
+                  day.quantity;
+              } else {
+                const newItem = {
+                  item: `${day.item.name} ${day.location}`,
+                  quantidade: day.quantity,
+                  total: day.total,
+                  media: day.total / day.quantity,
+                  custo: day.item.purchase_price,
+                  lucro:
+                    (day.total / day.quantity - day.item.purchase_price) *
+                    day.quantity,
+                  obs: day.item.observation,
+                };
+                newClose.push(newItem);
+
+                somaTotal.total += day.total;
+                somaTotal.lucro +=
+                  (day.total / day.quantity - day.item.purchase_price) *
+                  day.quantity;
+              }
+            } else {
+              const index = newClose.findIndex(
+                (line) => line.item === day.item.name,
+              );
+
+              if (index !== -1) {
+                newClose[index].quantidade += day.quantity;
+                newClose[index].total += day.total;
+                newClose[index].media =
+                  newClose[index].total / newClose[index].quantidade;
+                newClose[index].lucro =
+                  (newClose[index].total / newClose[index].quantidade -
+                    day.item.purchase_price) *
+                  newClose[index].quantidade;
+
+                somaTotal.total += day.total;
+                somaTotal.lucro +=
+                  (day.total / day.quantity - day.item.purchase_price) *
+                  day.quantity;
+              } else {
+                const newItem = {
+                  item: day.item.name,
+                  quantidade: day.quantity,
+                  total: day.total,
+                  media: day.total / day.quantity,
+                  custo: day.item.purchase_price,
+                  lucro:
+                    (day.total / day.quantity - day.item.purchase_price) *
+                    day.quantity,
+                  obs: day.item.observation,
+                };
+                newClose.push(newItem);
+                somaTotal.total += day.total;
+                somaTotal.lucro +=
+                  (day.total / day.quantity - day.item.purchase_price) *
+                  day.quantity;
+              }
+            }
+          }
+
+          // Soma valores para a tabela Resume
+          resumeArray.money += day.money === null ? 0 : day.money;
+          resumeArray.card += day.card === null ? 0 : day.card;
+          resumeArray.pix += day.pix === null ? 0 : day.pix;
+          resumeArray.term += day.vale === null ? 0 : day.vale;
+        });
+
+        // Adiciona observação
+        newClose.forEach((line) => {
+          if (line.obs == true) {
+            obs.push(`Venda ${line.quantidade} ${line.item}`);
+          }
+        });
+
+        // Calcula despesas
+        despesas.forEach((line) => {
+          resumeArray.expense += line.value === null ? 0 : line.value;
+        });
 
         // Mapeia as observações no array
         movement.forEach((line) => {
@@ -113,6 +242,21 @@ export function CloseBox() {
             `${line.type === "in" ? "Entrada" : "Saida"} ${line.quantity} ${line.item.name}`,
           );
         });
+
+        // Calcula resumo
+        resumeArray.total =
+          resumeArray.money +
+          resumeArray.card +
+          resumeArray.pix +
+          resumeArray.term;
+
+        resumeArray.money = resumeArray.money - resumeArray.expense;
+
+        setFechamento(newClose);
+        newClose.push(somaTotal);
+        setObservations(obs);
+        setResume(resumeArray);
+        setExpenses(despesas);
 
         // Filtra o estoque para os dados importantes
         let newStock = {
@@ -145,8 +289,6 @@ export function CloseBox() {
             newStock.aguas.vazio = line.quantity;
           }
         });
-
-        console.log("STOCK ANTES DA REVERT", newStock);
 
         // Reverter o estoque para 1 dia atrás diaria (padrão de envio)
         diaria.forEach((day) => {
@@ -248,554 +390,6 @@ export function CloseBox() {
 
         setStock(newStock);
 
-        console.log("STOCK DEPOIS DA REVERT", newStock);
-
-        // Mapeamento fechamento
-        let newFechamento = {};
-        let resumeArray = { money: 0, card: 0, pix: 0, expense: 0, term: 0 };
-
-        diaria.forEach((day, index) => {
-          const itemInformations = items.filter(
-            (item) => item.id === day.item_id,
-          );
-
-          if (index === 0) {
-            console.log("INDEX 0");
-            newFechamento = {
-              ...newFechamento,
-              total: {
-                total: 0,
-                lucro: 0,
-              },
-            };
-          }
-
-          // Gás P13 PORTARIA / ENTREGA
-          if (day.item_id === 1 && day.location === "Portaria") {
-            if (newFechamento.p13_portaria) {
-              newFechamento.p13_portaria.quantidade += day.quantity;
-              newFechamento.p13_portaria.total += day.total;
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (newFechamento.p13_portaria.media -
-                  newFechamento.p13_portaria.custo) *
-                day.quantity;
-
-              newFechamento.p13_portaria.media =
-                newFechamento.p13_portaria.total /
-                newFechamento.p13_portaria.quantidade;
-
-              newFechamento.p13_portaria.lucro =
-                (newFechamento.p13_portaria.media -
-                  newFechamento.p13_portaria.custo) *
-                newFechamento.p13_portaria.quantidade;
-            } else {
-              newFechamento = {
-                ...newFechamento,
-                p13_portaria: {
-                  quantidade: day.quantity,
-                  total: day.total,
-                  media: day.total / day.quantity,
-                  custo: itemInformations[0].purchase_price,
-                  lucro:
-                    (day.total / day.quantity -
-                      itemInformations[0].purchase_price) *
-                    day.quantity,
-                },
-              };
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (day.total / day.quantity -
-                  itemInformations[0].purchase_price) *
-                day.quantity;
-            }
-          } else if (day.item_id === 1 && day.location === "Entrega") {
-            if (newFechamento.p13_entrega) {
-              newFechamento.p13_entrega.quantidade += day.quantity;
-              newFechamento.p13_entrega.total += day.total;
-              console.log("TOTAL DE ENTREGA", day.total);
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (newFechamento.p13_entrega.media -
-                  newFechamento.p13_entrega.custo) *
-                day.quantity;
-
-              newFechamento.p13_entrega.media =
-                newFechamento.p13_entrega.total /
-                newFechamento.p13_entrega.quantidade;
-
-              newFechamento.p13_entrega.lucro =
-                (newFechamento.p13_entrega.media -
-                  newFechamento.p13_entrega.custo) *
-                newFechamento.p13_entrega.quantidade;
-            } else {
-              newFechamento = {
-                ...newFechamento,
-                p13_entrega: {
-                  quantidade: day.quantity,
-                  total: day.total,
-                  media: day.total / day.quantity,
-                  custo: itemInformations[0].purchase_price,
-                  lucro:
-                    (day.total / day.quantity -
-                      itemInformations[0].purchase_price) *
-                    day.quantity,
-                },
-              };
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (day.total / day.quantity -
-                  itemInformations[0].purchase_price) *
-                day.quantity;
-            }
-          }
-
-          // Água 20L PORTARIA / ENTREGA
-          if (day.item_id === 3 && day.location === "Portaria") {
-            // const itemInformations = items.filter(
-            //   (item) => item.id === day.item_id,
-            // );
-
-            if (newFechamento.agua_portaria) {
-              newFechamento.agua_portaria.quantidade += day.quantity;
-              newFechamento.agua_portaria.total += day.total;
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (newFechamento.agua_portaria.media -
-                  newFechamento.agua_portaria.custo) *
-                day.quantity;
-
-              newFechamento.agua_portaria.media =
-                newFechamento.agua_portaria.total /
-                newFechamento.agua_portaria.quantidade;
-
-              newFechamento.agua_portaria.lucro =
-                (newFechamento.agua_portaria.media -
-                  newFechamento.agua_portaria.custo) *
-                newFechamento.agua_portaria.quantidade;
-            } else {
-              newFechamento = {
-                ...newFechamento,
-                agua_portaria: {
-                  quantidade: day.quantity,
-                  total: day.total,
-                  media: day.total / day.quantity,
-                  custo: itemInformations[0].purchase_price,
-                  lucro:
-                    (day.total / day.quantity -
-                      itemInformations[0].purchase_price) *
-                    day.quantity,
-                },
-              };
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (day.total / day.quantity -
-                  itemInformations[0].purchase_price) *
-                day.quantity;
-            }
-          } else if (day.item_id === 3 && day.location === "Entrega") {
-            if (newFechamento.agua_entrega) {
-              newFechamento.agua_entrega.quantidade += day.quantity;
-              newFechamento.agua_entrega.total += day.total;
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (newFechamento.agua_entrega.media -
-                  newFechamento.agua_entrega.custo) *
-                day.quantity;
-
-              newFechamento.agua_entrega.media =
-                newFechamento.agua_entrega.total /
-                newFechamento.agua_entrega.quantidade;
-
-              newFechamento.agua_entrega.lucro =
-                (newFechamento.agua_entrega.media -
-                  newFechamento.agua_entrega.custo) *
-                newFechamento.agua_entrega.quantidade;
-            } else {
-              newFechamento = {
-                ...newFechamento,
-                agua_entrega: {
-                  quantidade: day.quantity,
-                  total: day.total,
-                  media: day.total / day.quantity,
-                  custo: itemInformations[0].purchase_price,
-                  lucro:
-                    (day.total / day.quantity -
-                      itemInformations[0].purchase_price) *
-                    day.quantity,
-                },
-              };
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (day.total / day.quantity -
-                  itemInformations[0].purchase_price) *
-                day.quantity;
-            }
-          }
-
-          // Gás COMPLETO
-          if (day.item_id === 5) {
-            obs.push(`Venda ${day.quantity} ${day.item.name}`);
-
-            if (newFechamento.p13_completo) {
-              newFechamento.p13_completo.quantidade += day.quantity;
-              newFechamento.p13_completo.total += day.total;
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (newFechamento.p13_completo.media -
-                  newFechamento.p13_completo.custo) *
-                day.quantity;
-
-              newFechamento.p13_completo.media =
-                newFechamento.p13_completo.total /
-                newFechamento.p13_completo.quantidade;
-
-              newFechamento.p13_completo.lucro =
-                (newFechamento.p13_completo.media -
-                  newFechamento.p13_completo.custo) *
-                newFechamento.p13_completo.quantidade;
-            } else {
-              newFechamento = {
-                ...newFechamento,
-                p13_completo: {
-                  quantidade: day.quantity,
-                  total: day.total,
-                  media: day.total / day.quantity,
-                  custo: itemInformations[0].purchase_price,
-                  lucro:
-                    (day.total / day.quantity -
-                      itemInformations[0].purchase_price) *
-                    day.quantity,
-                },
-              };
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (day.total / day.quantity -
-                  itemInformations[0].purchase_price) *
-                day.quantity;
-            }
-          }
-
-          // Água COMPLETO
-          if (day.item_id === 6) {
-            obs.push(`Venda ${day.quantity} ${day.item.name}`);
-
-            if (newFechamento.agua_completo) {
-              newFechamento.agua_completo.quantidade += day.quantity;
-              newFechamento.agua_completo.total += day.total;
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (newFechamento.agua_completo.media -
-                  newFechamento.agua_completo.custo) *
-                day.quantity;
-
-              newFechamento.agua_completo.media =
-                newFechamento.agua_completo.total /
-                newFechamento.agua_completo.quantidade;
-
-              newFechamento.agua_completo.lucro =
-                (newFechamento.agua_completo.media -
-                  newFechamento.agua_completo.custo) *
-                newFechamento.agua_completo.quantidade;
-            } else {
-              newFechamento = {
-                ...newFechamento,
-                agua_completo: {
-                  quantidade: day.quantity,
-                  total: day.total,
-                  media: day.total / day.quantity,
-                  custo: itemInformations[0].purchase_price,
-                  lucro:
-                    (day.total / day.quantity -
-                      itemInformations[0].purchase_price) *
-                    day.quantity,
-                },
-              };
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (day.total / day.quantity -
-                  itemInformations[0].purchase_price) *
-                day.quantity;
-            }
-          }
-
-          // Gás VAZIO
-          if (day.item_id === 2) {
-            obs.push(`Venda ${day.quantity} ${day.item.name}`);
-
-            if (newFechamento.p13_vazio) {
-              newFechamento.p13_vazio.quantidade += day.quantity;
-              newFechamento.p13_vazio.total += day.total;
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (newFechamento.p13_vazio.media -
-                  newFechamento.p13_vazio.custo) *
-                day.quantity;
-
-              newFechamento.p13_vazio.media =
-                newFechamento.p13_vazio.total /
-                newFechamento.p13_vazio.quantidade;
-
-              newFechamento.p13_vazio.lucro =
-                (newFechamento.p13_vazio.media -
-                  newFechamento.p13_vazio.custo) *
-                newFechamento.p13_vazio.quantidade;
-            } else {
-              newFechamento = {
-                ...newFechamento,
-                p13_vazio: {
-                  quantidade: day.quantity,
-                  total: day.total,
-                  media: day.total / day.quantity,
-                  custo: itemInformations[0].purchase_price,
-                  lucro:
-                    (day.total / day.quantity -
-                      itemInformations[0].purchase_price) *
-                    day.quantity,
-                },
-              };
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (day.total / day.quantity -
-                  itemInformations[0].purchase_price) *
-                day.quantity;
-            }
-          }
-
-          // Água Vazio
-          if (day.item_id === 4) {
-            obs.push(`Venda ${day.quantity} ${day.item.name}`);
-
-            if (newFechamento.agua_vazio) {
-              newFechamento.agua_vazio.quantidade += day.quantity;
-              newFechamento.agua_vazio.total += day.total;
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (newFechamento.agua_vazio.media -
-                  newFechamento.agua_vazio.custo) *
-                day.quantity;
-
-              newFechamento.agua_vazio.media =
-                newFechamento.agua_vazio.total /
-                newFechamento.agua_vazio.quantidade;
-
-              newFechamento.agua_vazio.lucro =
-                (newFechamento.agua_vazio.media -
-                  newFechamento.agua_vazio.custo) *
-                newFechamento.agua_vazio.quantidade;
-            } else {
-              newFechamento = {
-                ...newFechamento,
-                agua_vazio: {
-                  quantidade: day.quantity,
-                  total: day.total,
-                  media: day.total / day.quantity,
-                  custo: itemInformations[0].purchase_price,
-                  lucro:
-                    (day.total / day.quantity -
-                      itemInformations[0].purchase_price) *
-                    day.quantity,
-                },
-              };
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (day.total / day.quantity -
-                  itemInformations[0].purchase_price) *
-                day.quantity;
-            }
-          }
-
-          // P45
-          if (day.item_id === 7) {
-            if (newFechamento.p45) {
-              newFechamento.p45.quantidade += day.quantity;
-              newFechamento.p45.total += day.total;
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (newFechamento.p45.media - newFechamento.p45.custo) *
-                day.quantity;
-
-              newFechamento.p45.media =
-                newFechamento.p45.total / newFechamento.p45.quantidade;
-
-              newFechamento.p45.lucro =
-                (newFechamento.p45.media - newFechamento.p45.custo) *
-                newFechamento.p45.quantidade;
-            } else {
-              newFechamento = {
-                ...newFechamento,
-                p45: {
-                  quantidade: day.quantity,
-                  total: day.total,
-                  media: day.total / day.quantity,
-                  custo: itemInformations[0].purchase_price,
-                  lucro:
-                    (day.total / day.quantity -
-                      itemInformations[0].purchase_price) *
-                    day.quantity,
-                },
-              };
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (day.total / day.quantity -
-                  itemInformations[0].purchase_price) *
-                day.quantity;
-            }
-          }
-
-          // P45 COMPLETO
-          if (day.item_id === 8) {
-            obs.push(`Venda ${day.quantity} ${day.item.name}`);
-
-            if (newFechamento.p45) {
-              newFechamento.p45_completo.quantidade += day.quantity;
-              newFechamento.p45_completo.total += day.total;
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (newFechamento.p45_completo.media -
-                  newFechamento.p45_completo.custo) *
-                day.quantity;
-
-              newFechamento.p45_completo.media =
-                newFechamento.p45_completo.total /
-                newFechamento.p45_completo.quantidade;
-
-              newFechamento.p45_completo.lucro =
-                (newFechamento.p45_completo.media -
-                  newFechamento.p45_completo.custo) *
-                newFechamento.p45_completo.quantidade;
-            } else {
-              newFechamento = {
-                ...newFechamento,
-                p45_completo: {
-                  quantidade: day.quantity,
-                  total: day.total,
-                  media: day.total / day.quantity,
-                  custo: itemInformations[0].purchase_price,
-                  lucro:
-                    (day.total / day.quantity -
-                      itemInformations[0].purchase_price) *
-                    day.quantity,
-                },
-              };
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (day.total / day.quantity -
-                  itemInformations[0].purchase_price) *
-                day.quantity;
-            }
-          }
-
-          // P45 VAZIO
-          if (day.item_id === 9) {
-            obs.push(`Venda ${day.quantity} ${day.item.name}`);
-
-            if (newFechamento.p45) {
-              newFechamento.p45_vazio.quantidade += day.quantity;
-              newFechamento.p45_vazio.total += day.total;
-
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (newFechamento.p45_vazio.media -
-                  newFechamento.p45_vazio.custo) *
-                day.quantity;
-
-              newFechamento.p45_vazio.media =
-                newFechamento.p45_vazio.total /
-                newFechamento.p45_vazio.quantidade;
-
-              newFechamento.p45_vazio.lucro =
-                (newFechamento.p45_vazio.media -
-                  newFechamento.p45_vazio.custo) *
-                newFechamento.p45_vazio.quantidade;
-            } else {
-              newFechamento = {
-                ...newFechamento,
-                p45_vazio: {
-                  quantidade: day.quantity,
-                  total: day.total,
-                  media: day.total / day.quantity,
-                  custo: itemInformations[0].purchase_price,
-                  lucro:
-                    (day.total / day.quantity -
-                      itemInformations[0].purchase_price) *
-                    day.quantity,
-                },
-              };
-              newFechamento.total.total += day.total;
-
-              newFechamento.total.lucro +=
-                (day.total / day.quantity -
-                  itemInformations[0].purchase_price) *
-                day.quantity;
-            }
-          }
-
-          // Soma valores para a tabela Resume
-          resumeArray.money += day.money === null ? 0 : day.money;
-          resumeArray.card += day.card === null ? 0 : day.card;
-          resumeArray.pix += day.pix === null ? 0 : day.pix;
-          resumeArray.term += day.vale === null ? 0 : day.vale;
-        });
-
-        despesas.forEach((line) => {
-          resumeArray.expense += line.value === null ? 0 : line.value;
-        });
-
-        resumeArray.total =
-          resumeArray.money +
-          resumeArray.card +
-          resumeArray.pix +
-          resumeArray.term;
-
-        resumeArray.money = resumeArray.money - resumeArray.expense;
-
-        setResume(resumeArray);
-
-        setObservations(obs);
-        setFechamento(newFechamento);
-
-        console.log("Despesas: ", despesas);
-
         setDaily(diaria);
       } catch (error) {
         console.log(error);
@@ -809,7 +403,7 @@ export function CloseBox() {
 
   console.log("observações: ", observations);
 
-  console.log("Fechamento", fechamento);
+  console.log("Fechamento att", fechamento);
 
   console.log("resume: ", resume);
 
@@ -859,19 +453,18 @@ export function CloseBox() {
               </tr>
             </Thead>
             <Tbody>
-              {fechamentoMap.map(
-                (item) =>
-                  fechamento[item.key] && (
-                    <tr key={item.key}>
-                      <Td>{item.label}</Td>
-                      <Td>{fechamento[item.key].quantidade}</Td>
-                      <Td>{formatMoney(fechamento[item.key].total)}</Td>
-                      <Td>{formatMoney(fechamento[item.key].media)}</Td>
-                      <Td>{formatMoney(fechamento[item.key].custo)}</Td>
-                      <Td>{formatMoney(fechamento[item.key].lucro)}</Td>
-                    </tr>
-                  ),
-              )}
+              {fechamento &&
+                fechamento.length > 0 &&
+                fechamento.map((item, index) => (
+                  <tr key={index}>
+                    <Td>{item.item}</Td>
+                    <Td>{item.quantidade}</Td>
+                    <Td>{formatMoney(item.total)}</Td>
+                    <Td>{formatMoney(item.media)}</Td>
+                    <Td>{formatMoney(item.custo)}</Td>
+                    <Td>{formatMoney(item.lucro)}</Td>
+                  </tr>
+                ))}
             </Tbody>
           </Table>
         </TableSection>

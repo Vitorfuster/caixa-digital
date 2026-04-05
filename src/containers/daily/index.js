@@ -650,7 +650,12 @@ export function Daily() {
 
   const handleDeleteExpense = async (idToRemove) => {
     try {
-      await api.delete(`/expense/${idToRemove}`);
+      await toast.promise(api.delete(`/expense/${idToRemove}`), {
+        pending: "Apagando despesa",
+        success: "Despesa apagada com sucesso!",
+        error: "Erro ao apagar despesa!",
+      });
+
       setExpenses(expenses.filter((expense) => expense.id !== idToRemove));
     } catch (error) {
       console.log("Erro ao apagar despesa: ", error);
@@ -668,7 +673,11 @@ export function Daily() {
     };
 
     try {
-      await api.post("/expense", newExpense);
+      await toast.promise(api.post("/expense", newExpense), {
+        pending: "Enviando despesa",
+        success: "Despesa enviada com sucesso!",
+        error: "Falha ao enviar despesa!",
+      });
 
       setExpenses([...expenses, newExpense]);
 
@@ -683,7 +692,11 @@ export function Daily() {
 
   const handleDeleteMovement = async (idToRemove) => {
     try {
-      await api.delete(`/movement/${idToRemove}`);
+      await toast.promise(api.delete(`/movement/${idToRemove}`), {
+        pending: "Apagando Movimentação",
+        success: "Movimentação apagada com sucesso!",
+        error: "Falha ao apagar enviar Movimentação!",
+      });
     } catch (error) {
       console.log("Erro ao apagar movimentação: ", error);
     }
@@ -702,7 +715,11 @@ export function Daily() {
     };
 
     try {
-      await api.post("/movement", newMovement);
+      await toast.promise(api.post("/movement", newMovement), {
+        pending: "Enviando Movimentação",
+        success: "Movimentação enviada com sucesso!",
+        error: "Falha ao enviar enviar Movimentação!",
+      });
 
       setMovements([...movements, newMovement]);
 
