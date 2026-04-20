@@ -939,15 +939,7 @@ export function Daily() {
                               <option value=""></option>
                               {itens &&
                                 itens
-                                  .filter(
-                                    (item) =>
-                                      item.id === 1 ||
-                                      item.id === 2 ||
-                                      item.id === 5 ||
-                                      item.id === 7 ||
-                                      item.id === 8 ||
-                                      item.id === 9,
-                                  )
+                                  .filter((item) => item.category === 1)
                                   .map((item) => (
                                     <option key={item.id} value={item.id}>
                                       {item.name}
@@ -1111,12 +1103,7 @@ export function Daily() {
                               <option value=""></option>
                               {itens &&
                                 itens
-                                  .filter(
-                                    (item) =>
-                                      item.id === 3 ||
-                                      item.id === 4 ||
-                                      item.id === 6,
-                                  )
+                                  .filter((item) => item.category === 2)
                                   .map((item) => (
                                     <option key={item.id} value={item.id}>
                                       {item.name}
